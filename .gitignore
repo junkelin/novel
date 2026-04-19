@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# 模板文件（保留模板本身，不跟踪生成后的 index.html 中的动态内容变更）
+# index.html.template
+# chapters/chapter.template.html
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# WorkBuddy 内部
+.workbuddy/

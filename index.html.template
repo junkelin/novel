@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{SITE_TITLE}}</title>
+  <meta name="description" content="{{SITE_DESCRIPTION}}">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="page-index">
+
+  <header class="site-header">
+    <h1 class="site-title">{{SITE_TITLE}}</h1>
+    <p class="site-subtitle">{{SITE_SUBTITLE}}</p>
+  </header>
+
+  <main>
+    <h2 class="toc-title">目录</h2>
+    <ul class="toc-list">
+      <!-- 章节列表 - 每次发布新章节时自动追加 -->
+      {{TOC_ENTRIES}}
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <p>{{FOOTER_TEXT}}</p>
+  </footer>
+
+</body>
+</html>
