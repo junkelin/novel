@@ -1,20 +1,22 @@
 /* ========================================
    天命凰途 - 网文发布站样式
-   参考: zlinke-zhao.github.io/novel1 风格
-   适配手机/平板/桌面，阅读优先设计
+   参考: zlinke-zhao.github.io/novel1 风格（暗夜金主题）
+   深蓝渐变背景 + 金色点缀
    ======================================== */
 
 :root {
-  --bg-color: #f8f6f1;
-  --text-color: #333333;
-  --title-color: #1a1a1a;
-  --link-color: #9b6b2f;
-  --link-hover: #b87d36;
-  --border-color: #e2ddd4;
-  --chapter-bg: #ffffff;
-  --nav-bg: #f5f0e8;
-  --accent-color: #9b6b2f;
-  --disabled-color: #b0a898;
+  --bg-start: #1a1a2e;
+  --bg-mid: #16213e;
+  --bg-end: #0f3460;
+  --text-color: #e8e8e8;
+  --text-muted: #888888;
+  --gold: #ffd700;
+  --gold-dim: rgba(255, 215, 0, 0.3);
+  --gold-border: rgba(255, 215, 0, 0.2);
+  --gold-hover: rgba(255, 215, 0, 0.2);
+  --content-bg: rgba(255, 255, 255, 0.05);
+  --border-gold: rgba(255, 215, 0, 0.3);
+  --title-color: #ffd700;
 }
 
 * {
@@ -28,14 +30,15 @@ html {
 }
 
 body {
-  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Serif SC",
-               "Source Han Serif SC", Georgia, serif;
-  background-color: var(--bg-color);
+  font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+  background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
+  min-height: 100vh;
   color: var(--text-color);
   line-height: 2.0;
   font-size: 18px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  padding: 20px;
 }
 
 /* ========================================
@@ -43,79 +46,88 @@ body {
    ======================================== */
 
 .page-index {
-  max-width: 750px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 48px 24px 72px;
+  padding: 40px 24px 72px;
 }
 
 .page-index .site-header {
   text-align: center;
   margin-bottom: 48px;
   padding-bottom: 36px;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 1px solid var(--border-gold);
 }
 
 .page-index .site-title {
   font-size: 2.6em;
   font-weight: 700;
-  color: var(--title-color);
-  letter-spacing: 0.1em;
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  letter-spacing: 0.12em;
   margin-bottom: 10px;
 }
 
 .page-index .site-subtitle {
   font-size: 0.95em;
-  color: #999;
+  color: var(--text-muted);
   font-weight: 400;
   letter-spacing: 0.06em;
-  margin-bottom: 6px;
-}
-
-.page-index .site-desc {
-  font-size: 0.88em;
-  color: #bbb;
-  margin-top: 8px;
 }
 
 .page-index .toc-title {
-  font-size: 1.2em;
-  color: var(--title-color);
-  margin-bottom: 18px;
+  font-size: 1.25em;
+  color: var(--gold);
+  margin-bottom: 22px;
   padding-left: 14px;
-  border-left: 4px solid var(--accent-color);
+  border-left: 4px solid var(--gold);
   font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
 .toc-list {
   list-style: none;
+  background: var(--content-bg);
+  border-radius: 15px;
+  border: 1px solid var(--gold-border);
+  overflow: hidden;
 }
 
 .toc-list li {
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid var(--gold-border);
+}
+
+.toc-list li:last-child {
+  border-bottom: none;
 }
 
 .toc-list a {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 14px;
+  padding: 16px 20px;
   color: var(--text-color);
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.25s ease;
   font-size: 1em;
 }
 
 .toc-list a:hover {
-  background: rgba(155, 107, 47, 0.06);
-  color: var(--link-hover);
-  padding-left: 22px;
+  background: rgba(255, 215, 0, 0.08);
+  color: var(--gold);
+  padding-left: 26px;
+  transform: translateX(4px);
 }
 
 .toc-list .chapter-num {
-  color: #bbb;
+  color: var(--gold);
   font-size: 0.83em;
   min-width: 56px;
   flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.toc-list a:hover .chapter-num {
+  opacity: 1;
 }
 
 .toc-list .chapter-name {
@@ -127,7 +139,7 @@ body {
 }
 
 .toc-list .chapter-date {
-  color: #ccc;
+  color: var(--text-muted);
   font-size: 0.78em;
   flex-shrink: 0;
 }
@@ -139,31 +151,31 @@ body {
 .page-chapter {
   max-width: 680px;
   margin: 0 auto;
-  padding: 48px 28px 96px;
-  background: var(--chapter-bg);
+  padding: 40px 28px 80px;
   min-height: 100vh;
-  box-shadow: 0 0 30px rgba(0,0,0,0.04);
 }
 
 .chapter-header {
   text-align: center;
   margin-bottom: 44px;
-  padding-bottom: 28px;
-  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--border-gold);
 }
 
 .chapter-header-subtitle {
   font-size: 0.85em;
-  color: var(--accent-color);
+  color: var(--gold);
   letter-spacing: 0.08em;
   margin-bottom: 8px;
   font-weight: 400;
+  opacity: 0.9;
 }
 
 .chapter-header h1 {
-  font-size: 1.75em;
+  font-size: 1.85em;
   font-weight: 700;
-  color: var(--title-color);
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
   letter-spacing: 0.06em;
   margin-bottom: 10px;
   line-height: 1.5;
@@ -171,21 +183,27 @@ body {
 
 .chapter-header .chapter-meta {
   font-size: 0.82em;
-  color: #aaa;
+  color: var(--text-muted);
   letter-spacing: 0.04em;
 }
 
 /* 正文内容 */
 .chapter-content {
+  background: var(--content-bg);
+  border-radius: 15px;
+  padding: 40px;
+  line-height: 2.0;
+  font-size: 18px;
   text-align: justify;
-  word-break: break-word;
+  border: 1px solid var(--gold-border);
+  text-indent: 2em;
 }
 
 .chapter-content p {
+  margin-bottom: 1.5em;
   text-indent: 2em;
-  margin-bottom: 1.25em;
   line-height: 2.0;
-  font-size: 1em;
+  font-size: 18px;
 }
 
 /* 首段 / 特殊段不缩进 */
@@ -198,7 +216,7 @@ body {
 .chapter-content hr,
 .chapter-content .scene-break {
   border: none;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px dashed var(--gold-dim);
   margin: 2em auto;
   width: 60%;
 }
@@ -206,12 +224,12 @@ body {
 /* 强调文字 */
 .chapter-content strong {
   font-weight: 700;
-  color: var(--title-color);
+  color: #fff;
 }
 
 .chapter-content em {
   font-style: normal;
-  color: var(--accent-color);
+  color: var(--gold);
 }
 
 /* ========================================
@@ -222,56 +240,55 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 56px;
-  padding-top: 28px;
-  border-top: 1px solid var(--border-color);
-  gap: 12px;
+  margin-top: 40px;
+  gap: 20px;
 }
 
-.chapter-nav a {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 20px;
-  background: var(--nav-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  color: var(--text-color);
-  text-decoration: none;
-  font-size: 0.9em;
-  transition: all 0.2s ease;
+.chapter-nav a,
+.chapter-nav span.disabled {
+  flex: 1;
+  padding: 15px 25px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.3s ease;
   white-space: nowrap;
   min-width: 88px;
-  text-align: center;
+  text-decoration: none;
+  font-size: 0.95em;
+  color: var(--gold);
 }
 
 .chapter-nav a:hover {
-  background: var(--accent-color);
+  background: rgba(255, 215, 0, 0.18);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(255, 215, 0, 0.15);
   color: #fff;
-  border-color: var(--accent-color);
 }
 
-/* 目录按钮（深色背景） */
+/* 目录按钮（深金色） */
 .chapter-nav .nav-toc {
-  background: var(--title-color);
-  color: #fff;
-  border-color: var(--title-color);
+  background: rgba(255, 215, 0, 0.15);
+  color: var(--gold);
+  border-color: var(--gold-dim);
 }
 
 .chapter-nav .nav-toc:hover {
-  background: #444;
-  border-color: #444;
+  background: rgba(255, 215, 0, 0.25);
+  color: #fff;
 }
 
 /* 禁用状态（末章下一章 / 首章上一章） */
 .chapter-nav a.disabled,
 .chapter-nav span.disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   pointer-events: none;
   cursor: default;
-  background: #f0ece4;
-  color: var(--disabled-color);
-  border-color: #ddd;
+  background: transparent;
+  color: var(--text-muted);
+  border-color: rgba(136, 136, 136, 0.2);
+  transform: none !important;
 }
 
 /* 占位空元素（第一章无上一章时） */
@@ -287,10 +304,20 @@ body {
 .site-footer {
   text-align: center;
   padding: 36px 20px;
-  color: #ccc;
-  font-size: 0.8em;
-  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.82em;
+  border-top: 1px solid var(--border-gold);
   margin-top: 48px;
+}
+
+.site-footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.site-footer a:hover {
+  color: var(--gold);
 }
 
 /* ========================================
@@ -300,35 +327,40 @@ body {
 @media (max-width: 640px) {
   body {
     font-size: 17px;
+    padding: 12px;
   }
   .page-chapter {
-    padding: 28px 18px 72px;
-    box-shadow: none;
+    padding: 28px 16px 60px;
   }
   .page-index {
-    padding: 28px 18px 48px;
+    padding: 28px 16px 48px;
   }
   .page-index .site-title {
     font-size: 2em;
   }
   .chapter-header h1 {
-    font-size: 1.4em;
+    font-size: 1.45em;
+  }
+  .chapter-content {
+    padding: 24px 18px;
   }
   .chapter-nav {
     flex-wrap: wrap;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
   }
   .chapter-nav a,
-  .chapter-nav .nav-placeholder {
+  .chapter-nav .nav-placeholder,
+  .chapter-nav span.disabled {
     flex: 1 1 auto;
-    text-align: center;
     min-width: 72px;
-    padding: 10px 12px;
+    padding: 12px 14px;
+    font-size: 0.88em;
   }
   .toc-list a {
     flex-wrap: wrap;
     gap: 4px;
+    padding: 13px 16px;
   }
   .toc-list .chapter-date {
     width: 100%;
@@ -345,7 +377,7 @@ body {
     font-size: 19px;
   }
   .page-chapter {
-    max-width: 760px;
+    max-width: 720px;
   }
 }
 
@@ -357,11 +389,16 @@ body {
   body {
     background: #fff;
     color: #000;
+    padding: 0;
   }
   .page-chapter {
     max-width: 100%;
     padding: 0;
-    box-shadow: none;
+  }
+  .chapter-content {
+    background: transparent;
+    border: none;
+    padding: 0;
   }
   .chapter-nav,
   .site-footer {
