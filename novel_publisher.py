@@ -45,7 +45,7 @@ CSS_DIR = NOVEL_BASE / "css"
 CSS_REL = "../css/style.css"  # 书目录 → CSS 的相对路径
 
 # 默认书名（可通过 --book 覆盖）
-DEFAULT_BOOK = "天命凰途"
+DEFAULT_BOOK = "tianming-huangtu"
 
 
 def get_book_paths(book_name):
