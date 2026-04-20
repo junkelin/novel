@@ -1,18 +1,20 @@
 /* ========================================
-   novel - 网文发布站样式
+   天命凰途 - 网文发布站样式
+   参考: zlinke-zhao.github.io/novel1 风格
    适配手机/平板/桌面，阅读优先设计
    ======================================== */
 
 :root {
-  --bg-color: #f7f5f0;
-  --text-color: #2c2c2c;
+  --bg-color: #f8f6f1;
+  --text-color: #333333;
   --title-color: #1a1a1a;
-  --link-color: #8b6914;
-  --link-hover: #a07d1a;
-  --border-color: #e0dcd3;
-  --chapter-bg: #fffcf5;
-  --nav-bg: #faf6ee;
-  --accent-color: #8b6914;
+  --link-color: #9b6b2f;
+  --link-hover: #b87d36;
+  --border-color: #e2ddd4;
+  --chapter-bg: #ffffff;
+  --nav-bg: #f5f0e8;
+  --accent-color: #9b6b2f;
+  --disabled-color: #b0a898;
 }
 
 * {
@@ -21,50 +23,67 @@
   box-sizing: border-box;
 }
 
-body {
-  font-family: "Source Han Serif SC", "Noto Serif SC", "Songti SC", Georgia, "Times New Roman", serif;
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  line-height: 1.9;
-  font-size: 17px;
-  -webkit-font-smoothing: antialiased;
+html {
+  scroll-behavior: smooth;
 }
 
-/* ---- 首页 / 目录样式 ---- */
+body {
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Serif SC",
+               "Source Han Serif SC", Georgia, serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  line-height: 2.0;
+  font-size: 18px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========================================
+   首页 / 目录样式
+   ======================================== */
+
 .page-index {
-  max-width: 720px;
+  max-width: 750px;
   margin: 0 auto;
-  padding: 40px 20px 60px;
+  padding: 48px 24px 72px;
 }
 
 .page-index .site-header {
   text-align: center;
   margin-bottom: 48px;
-  padding-bottom: 32px;
-  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 36px;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .page-index .site-title {
-  font-size: 2.4em;
+  font-size: 2.6em;
   font-weight: 700;
   color: var(--title-color);
-  letter-spacing: 0.08em;
-  margin-bottom: 12px;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
 }
 
 .page-index .site-subtitle {
-  font-size: 1em;
-  color: #888;
+  font-size: 0.95em;
+  color: #999;
   font-weight: 400;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.page-index .site-desc {
+  font-size: 0.88em;
+  color: #bbb;
+  margin-top: 8px;
 }
 
 .page-index .toc-title {
-  font-size: 1.3em;
+  font-size: 1.2em;
   color: var(--title-color);
-  margin-bottom: 20px;
-  padding-left: 12px;
-  border-left: 3px solid var(--accent-color);
+  margin-bottom: 18px;
+  padding-left: 14px;
+  border-left: 4px solid var(--accent-color);
+  font-weight: 600;
 }
 
 .toc-list {
@@ -72,14 +91,14 @@ body {
 }
 
 .toc-list li {
-  border-bottom: 1px solid rgba(0,0,0,0.04);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .toc-list a {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 12px;
+  padding: 15px 14px;
   color: var(--text-color);
   text-decoration: none;
   transition: all 0.2s ease;
@@ -87,57 +106,73 @@ body {
 }
 
 .toc-list a:hover {
-  background: rgba(139, 105, 20, 0.06);
+  background: rgba(155, 107, 47, 0.06);
   color: var(--link-hover);
-  padding-left: 18px;
+  padding-left: 22px;
 }
 
 .toc-list .chapter-num {
-  color: #aaa;
-  font-size: 0.85em;
-  min-width: 60px;
+  color: #bbb;
+  font-size: 0.83em;
+  min-width: 56px;
+  flex-shrink: 0;
 }
 
 .toc-list .chapter-name {
   flex: 1;
-  margin: 0 12px;
+  margin: 0 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .toc-list .chapter-date {
-  color: #bbb;
-  font-size: 0.8em;
+  color: #ccc;
+  font-size: 0.78em;
+  flex-shrink: 0;
 }
 
-/* ---- 章节页面样式 ---- */
+/* ========================================
+   章节页面样式
+   ======================================== */
+
 .page-chapter {
-  max-width: 640px;
+  max-width: 680px;
   margin: 0 auto;
-  padding: 40px 24px 80px;
+  padding: 48px 28px 96px;
   background: var(--chapter-bg);
   min-height: 100vh;
+  box-shadow: 0 0 30px rgba(0,0,0,0.04);
 }
 
 .chapter-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 44px;
   padding-bottom: 28px;
   border-bottom: 1px solid var(--border-color);
 }
 
+.chapter-header-subtitle {
+  font-size: 0.85em;
+  color: var(--accent-color);
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  font-weight: 400;
+}
+
 .chapter-header h1 {
-  font-size: 1.8em;
+  font-size: 1.75em;
   font-weight: 700;
   color: var(--title-color);
   letter-spacing: 0.06em;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  line-height: 1.5;
 }
 
 .chapter-header .chapter-meta {
-  font-size: 0.85em;
-  color: #999;
+  font-size: 0.82em;
+  color: #aaa;
+  letter-spacing: 0.04em;
 }
 
 /* 正文内容 */
@@ -148,40 +183,66 @@ body {
 
 .chapter-content p {
   text-indent: 2em;
-  margin-bottom: 1.2em;
-  line-height: 1.9;
+  margin-bottom: 1.25em;
+  line-height: 2.0;
+  font-size: 1em;
 }
 
-.chapter-content p:first-of-type {
-  text-indent: 0;
-}
-
+/* 首段 / 特殊段不缩进 */
+.chapter-content p:first-of-type,
 .chapter-content p.no-indent {
   text-indent: 0;
 }
 
-/* ---- 章节导航栏 ---- */
+/* 场景分隔线 */
+.chapter-content hr,
+.chapter-content .scene-break {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 2em auto;
+  width: 60%;
+}
+
+/* 强调文字 */
+.chapter-content strong {
+  font-weight: 700;
+  color: var(--title-color);
+}
+
+.chapter-content em {
+  font-style: normal;
+  color: var(--accent-color);
+}
+
+/* ========================================
+   章节导航栏
+   ======================================== */
+
 .chapter-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 48px;
-  padding-top: 24px;
-  border-top: 2px solid var(--border-color);
-  gap: 16px;
+  margin-top: 56px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border-color);
+  gap: 12px;
 }
 
 .chapter-nav a {
-  display: inline-block;
-  padding: 10px 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
   background: var(--nav-bg);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   color: var(--text-color);
   text-decoration: none;
-  font-size: 0.92em;
+  font-size: 0.9em;
   transition: all 0.2s ease;
   white-space: nowrap;
+  min-width: 88px;
+  text-align: center;
 }
 
 .chapter-nav a:hover {
@@ -190,47 +251,80 @@ body {
   border-color: var(--accent-color);
 }
 
+/* 目录按钮（深色背景） */
 .chapter-nav .nav-toc {
   background: var(--title-color);
-  color: #fff !important;
-  border-color: var(--title-color) !important;
+  color: #fff;
+  border-color: var(--title-color);
 }
 
 .chapter-nav .nav-toc:hover {
-  opacity: 0.85;
+  background: #444;
+  border-color: #444;
 }
 
-.chapter-nav a.disabled {
-  opacity: 0.35;
+/* 禁用状态（末章下一章 / 首章上一章） */
+.chapter-nav a.disabled,
+.chapter-nav span.disabled {
+  opacity: 0.4;
   pointer-events: none;
   cursor: default;
+  background: #f0ece4;
+  color: var(--disabled-color);
+  border-color: #ddd;
 }
 
-/* ---- 页脚 ---- */
+/* 占位空元素（第一章无上一章时） */
+.chapter-nav .nav-placeholder {
+  visibility: hidden;
+  min-width: 88px;
+}
+
+/* ========================================
+   页脚
+   ======================================== */
+
 .site-footer {
   text-align: center;
-  padding: 32px 20px;
-  color: #bbb;
-  font-size: 0.82em;
+  padding: 36px 20px;
+  color: #ccc;
+  font-size: 0.8em;
   border-top: 1px solid var(--border-color);
-  margin-top: 40px;
+  margin-top: 48px;
 }
 
-/* ---- 响应式 ---- */
-@media (max-width: 600px) {
-  body { font-size: 16px; }
-  .page-chapter { padding: 24px 16px 60px; }
-  .page-index { padding: 24px 16px 40px; }
-  .page-index .site-title { font-size: 1.8em; }
-  .chapter-header h1 { font-size: 1.5em; }
+/* ========================================
+   响应式 - 手机
+   ======================================== */
+
+@media (max-width: 640px) {
+  body {
+    font-size: 17px;
+  }
+  .page-chapter {
+    padding: 28px 18px 72px;
+    box-shadow: none;
+  }
+  .page-index {
+    padding: 28px 18px 48px;
+  }
+  .page-index .site-title {
+    font-size: 2em;
+  }
+  .chapter-header h1 {
+    font-size: 1.4em;
+  }
   .chapter-nav {
     flex-wrap: wrap;
     justify-content: center;
+    gap: 8px;
   }
-  .chapter-nav a {
+  .chapter-nav a,
+  .chapter-nav .nav-placeholder {
     flex: 1 1 auto;
     text-align: center;
-    min-width: 80px;
+    min-width: 72px;
+    padding: 10px 12px;
   }
   .toc-list a {
     flex-wrap: wrap;
@@ -242,14 +336,35 @@ body {
   }
 }
 
-@media (min-width: 1200px) {
-  body { font-size: 18px; }
-  .page-chapter { max-width: 720px; }
+/* ========================================
+   响应式 - 大屏
+   ======================================== */
+
+@media (min-width: 1280px) {
+  body {
+    font-size: 19px;
+  }
+  .page-chapter {
+    max-width: 760px;
+  }
 }
 
-/* ---- 打印友好 ---- */
+/* ========================================
+   打印
+   ======================================== */
+
 @media print {
-  body { background: #fff; color: #000; }
-  .page-chapter { max-width: 100%; padding: 0; }
-  .chapter-nav, .site-footer { display: none; }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .page-chapter {
+    max-width: 100%;
+    padding: 0;
+    box-shadow: none;
+  }
+  .chapter-nav,
+  .site-footer {
+    display: none;
+  }
 }

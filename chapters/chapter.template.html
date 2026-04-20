@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{CHAPTER_TITLE}}</title>
+  <title>{{CHAPTER_TITLE}} - {{SITE_TITLE}}</title>
   <meta name="description" content="{{CHAPTER_TITLE}} - {{SITE_TITLE}}">
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body class="page-chapter">
 
   <header class="chapter-header">
+    <div class="chapter-header-subtitle">《{{SITE_TITLE}}》</div>
     <h1>{{CHAPTER_TITLE}}</h1>
     <p class="chapter-meta">{{CHAPTER_DATE}}</p>
   </header>
@@ -21,7 +22,7 @@
   <!-- 章节导航 -->
   <nav class="chapter-nav">
     {{PREV_LINK}}
-    <a href="../index.html" class="nav-toc">目录</a>
+    <a href="../index.html" class="nav-toc">📖 目录</a>
     {{NEXT_LINK}}
   </nav>
 

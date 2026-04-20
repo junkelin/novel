@@ -1,24 +1,32 @@
 #!/usr/bin/env python3
 """
-novel_publisher.py - 网文自动发布工具
+novel_publisher.py - 网文自动发布工具 v2.0
 
 功能：
 1. 将精修后的 MD 定稿转换为 HTML 成品页
 2. 自动更新 index.html 目录入口
-3. 自动更新上一章的"下一章"链接
-4. 生成带上下章导航的完整 HTML
+3. 自动更新上一章的"下一章"链接（将"待更新"变为有效链接）
+4. 每批次最后一章，"下一章"按钮显示为"下一章（待更新）"且不可点击
+5. 支持批量发布（--batch 模式，一次发布多章并自动标记末章）
 
 用法：
-    python novel_publisher.py --chapter <章节号> --title <章节标题> [--md-file <MD文件路径>] [--content <正文内容直接传入>]
+    # 发布单章（自动标记为末章-待更新）
+    python novel_publisher.py --chapter 5 --title "章节标题" --md-file chapters/chapter-005.md --last
 
-示例：
-    python novel_publisher.py --chapter 1 --title "风起之时"
-    python novel_publisher.py --chapter 5 --title "暗流涌动" --md-file chapters/chapter-005.md
+    # 发布单章（非末章，下一章链接有效占位）
+    python novel_publisher.py --chapter 5 --title "章节标题" --md-file chapters/chapter-005.md
+
+    # 列出已发布章节
+    python novel_publisher.py --list
+
+    # 查询当前最大章节号
+    python novel_publisher.py --max-chapter
 """
 
 import os
 import sys
 import re
+import json
 import argparse
 from datetime import datetime
 from pathlib import Path
@@ -28,110 +36,157 @@ BASE_DIR = Path(r"D:\AI\MyData\网文写作\novel")
 CHAPTERS_DIR = BASE_DIR / "chapters"
 CSS_DIR = BASE_DIR / "css"
 INDEX_FILE = BASE_DIR / "index.html"
+STATE_FILE = BASE_DIR / ".publisher_state.json"   # 记录当前最大章节号
 
 # 站点信息
-SITE_TITLE = "小说"           # 站点/小说标题
-SITE_SUBTITLE = "连载中..."   # 副标题
-SITE_DESCRIPTION = ""         # SEO描述
-FOOTER_TEXT = f"\u00a9 {datetime.now().year} {SITE_TITLE}"  # 页脚文字
+SITE_TITLE = "天命凰途"
+SITE_SUBTITLE = "玄学 · 重生 · 大女主 | 连载中..."
+SITE_DESCRIPTION = "《天命凰途》- 都市玄学大女主重生爽文，番茄小说同步连载"
+FOOTER_TEXT = f"© {datetime.now().year} {SITE_TITLE} · AI创作"
 
+# 末章按钮文字
+NEXT_PENDING_TEXT = "下一章（待更新）"
 # ============================================================
 
 
+def load_state():
+    """加载发布状态（当前最大章节号，末章编号）。"""
+    if STATE_FILE.exists():
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"max_chapter": 0, "last_chapter": 0}
+
+
+def save_state(state):
+    """保存发布状态。"""
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+
 def md_to_html_paragraphs(md_text):
-    """将 MD 正文文本转为 HTML 段落，保留段落缩进格式。"""
+    """
+    将 MD 正文文本转为 HTML 段落。
+    - 处理 **粗体** 和 *斜体*
+    - 处理 --- 场景分隔符
+    - 去除 # 标题行（章节标题已在 header 显示）
+    """
     lines = md_text.strip().split("\n")
     paragraphs = []
     current_para = []
 
     for line in lines:
-        line = line.strip()
-        if not line:
+        stripped = line.strip()
+
+        # 跳过 MD 标题行
+        if stripped.startswith("#"):
+            continue
+
+        # 场景分隔线
+        if stripped in ("---", "——", "——————"):
+            if current_para:
+                text = process_inline("".join(current_para))
+                paragraphs.append(f"<p>{text}</p>")
+                current_para = []
+            paragraphs.append('<hr class="scene-break">')
+            continue
+
+        if not stripped:
             # 空行 = 段落分隔
             if current_para:
-                text = "".join(current_para)
+                text = process_inline("".join(current_para))
                 paragraphs.append(f"<p>{text}</p>")
                 current_para = []
         else:
             # 转义 HTML 特殊字符
-            line = line.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            current_para.append(line)
+            safe_line = stripped.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            current_para.append(safe_line)
 
     # 最后一段
     if current_para:
-        text = "".join(current_para)
+        text = process_inline("".join(current_para))
         paragraphs.append(f"<p>{text}</p>")
 
     return "\n".join(paragraphs)
 
 
-def load_template(template_path):
-    """加载模板文件。"""
+def process_inline(text):
+    """处理行内 MD 格式：**粗体**、*斜体*。"""
+    # **粗体**
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    # *斜体*（单星号）
+    text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', text)
+    return text
+
+
+def load_template():
+    """加载章节模板文件。"""
+    template_path = CHAPTERS_DIR / "chapter.template.html"
     with open(template_path, "r", encoding="utf-8") as f:
         return f.read()
 
 
-def generate_chapter_html(chapter_num, title, content_md):
+def generate_chapter_html(chapter_num, title, content_md, is_last=False):
     """
     生成单个章节 HTML 文件。
-    返回：(html内容, 文件路径)
-    """
-    chapter_date = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    # 格式化章节号
+    :param chapter_num: 章节号（整数）
+    :param title: 章节标题（不含"第X章"前缀）
+    :param content_md: MD 正文内容
+    :param is_last: 是否是本批次末章（True = 下一章显示"待更新"不可点）
+    :return: 生成文件的 Path 对象
+    """
+    chapter_date = datetime.now().strftime("%Y-%m-%d")
     num_str = str(chapter_num).zfill(3)
     filename = f"chapter-{num_str}.html"
     filepath = CHAPTERS_DIR / filename
 
-    # 转换正文为 HTML 段落
+    # 转换正文
     content_html = md_to_html_paragraphs(content_md)
 
-    # 计算上/下章链接
-    prev_num = chapter_num - 1
-    next_num = chapter_num + 1
-    prev_str = str(prev_num).zfill(3) if prev_num >= 1 else None
-    next_str = str(next_num).zfill(3)
-
     # 上一章链接
-    if prev_str and (CHAPTERS_DIR / f"chapter-{prev_str}.html").exists():
-        prev_link = f'<a href="chapter-{prev_str}.html">\u2190 \u4e0a\u4e00\u7ae0</a>'
-    elif prev_num >= 1:
-        # 文件不存在但编号有效（可能尚未发布）
-        prev_link = f'<a href="chapter-{prev_str}.html" class="disabled">\u2190 \u4e0a\u4e00\u7ae0</a>'
+    prev_num = chapter_num - 1
+    if prev_num >= 1:
+        prev_str = str(prev_num).zfill(3)
+        prev_link = f'<a href="chapter-{prev_str}.html">← 上一章</a>'
     else:
-        prev_link = '<span></span>'  # 第一章没有上一章
+        # 第一章，用占位符保持布局
+        prev_link = '<span class="nav-placeholder"></span>'
 
-    # 下一章链接（先占位，发布下一章时会被覆盖）
-    next_link = f'<a href="chapter-{next_str}.html">\u4e0b\u4e00\u7ae0 \u2192</a>'
+    # 下一章链接
+    next_num = chapter_num + 1
+    next_str = str(next_num).zfill(3)
+    if is_last:
+        # 末章：显示"待更新"，不可点击
+        next_link = f'<a href="chapter-{next_str}.html" class="disabled">{NEXT_PENDING_TEXT}</a>'
+    else:
+        # 非末章：普通链接（下一章发布后会自动激活）
+        next_link = f'<a href="chapter-{next_str}.html">下一章 →</a>'
 
-    # 加载模板并替换占位符
-    template_path = CHAPTERS_DIR / "chapter.template.html"
-    template = load_template(template_path)
-
+    # 组装 HTML
+    template = load_template()
     html = template
-    html = html.replace("{{CHAPTER_TITLE}}", f"{title}")
+    html = html.replace("{{CHAPTER_TITLE}}", f"第{chapter_num}章 {title}")
     html = html.replace("{{CHAPTER_DATE}}", chapter_date)
     html = html.replace("{{CHAPTER_CONTENT}}", content_html)
     html = html.replace("{{PREV_LINK}}", prev_link)
     html = html.replace("{{NEXT_LINK}}", next_link)
     html = html.replace("{{SITE_TITLE}}", SITE_TITLE)
 
-    # 写入文件
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"[OK] \u7ae0\u8282HTML: {filepath}")
-
+    flag = "【末章-待更新】" if is_last else ""
+    print(f"[OK] 章节HTML: {filepath} {flag}")
     return filepath
 
 
-def update_prev_chapter_next_link(chapter_num):
+def activate_prev_chapter_next_link(chapter_num):
     """
-    更新上一章 HTML 的"下一章"链接，指向当前新发布的这一章。
-    如果是第一章，则跳过。
+    将上一章（chapter_num - 1）的"下一章（待更新）"激活为正常链接。
+    仅当上一章的下一章链接是 disabled 状态时才更新。
     """
     if chapter_num <= 1:
-        return None
+        return
 
     prev_num = chapter_num - 1
     prev_str = str(prev_num).zfill(3)
@@ -139,39 +194,39 @@ def update_prev_chapter_next_link(chapter_num):
     prev_file = CHAPTERS_DIR / f"chapter-{prev_str}.html"
 
     if not prev_file.exists():
-        print(f"[WARN] \u4e0a\u4e00\u7ae0\u6587\u4ef6\u4e0d\u5b58\u5728: {prev_file}")
-        return None
+        print(f"[WARN] 上一章文件不存在: {prev_file}")
+        return
 
     with open(prev_file, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # 替换"下一章"链接中的 disabled 为实际链接
+    # 匹配 disabled 的下一章链接（无论文字是什么）
     old_pattern = f'<a href="chapter-{curr_str}.html" class="disabled">'
     new_pattern = f'<a href="chapter-{curr_str}.html">'
 
     if old_pattern in content:
         content = content.replace(old_pattern, new_pattern)
+        # 同时将"待更新"文字改回"下一章 →"
+        content = content.replace(f'>{NEXT_PENDING_TEXT}</a>', '>下一章 →</a>', 1)
         with open(prev_file, "w", encoding="utf-8") as f:
             f.write(content)
-        print(f"[OK] \u66f4\u65b0\u4e0a\u4e00\u7ae0({prev_num})\u7684\"\u4e0b\u4e00\u7ae0\"\u94fe\u63a5")
-        return prev_file
+        print(f"[OK] 激活第{prev_num}章的下一章链接 -> chapter-{curr_str}.html")
     else:
-        print(f"[SKIP] \u4e0a\u4e00\u7ae0({prev_num})\u94fe\u63a5\u5df2\u662f\u6709\u6548\u72b6\u6001")
-        return None
+        print(f"[SKIP] 第{prev_num}章链接已是有效状态，无需更新")
 
 
 def update_index_toc(chapter_num, title):
     """
     更新 index.html 目录页，追加新章节条目。
+    如果 index.html 不存在，则从 index.html.template 创建。
     """
     chapter_date = datetime.now().strftime("%Y-%m-%d")
-
-    # 新章节条目 HTML
     num_str = str(chapter_num).zfill(3)
+
     entry = (
         f'      <li>\n'
         f'        <a href="chapters/chapter-{num_str}.html">\n'
-        f'          <span class="chapter-num">第{chapter_num}\u7ae0</span>\n'
+        f'          <span class="chapter-num">第{chapter_num}章</span>\n'
         f'          <span class="chapter-name">{title}</span>\n'
         f'          <span class="chapter-date">{chapter_date}</span>\n'
         f'        </a>\n'
@@ -183,22 +238,19 @@ def update_index_toc(chapter_num, title):
             index_content = f.read()
 
         if "{{TOC_ENTRIES}}" in index_content:
-            # 首次发布：在占位符位置插入
             index_content = index_content.replace("{{TOC_ENTRIES}}", entry + "      {{TOC_ENTRIES}}")
         elif "</ul>" in index_content:
-            # 后续追加：在 </ul> 前插入
-            index_content = index_content.replace("</ul>", entry + "</ul>")
+            index_content = index_content.replace("</ul>", entry + "</ul>", 1)
         else:
-            print("[ERROR] \u65e0\u6cd5\u627e\u5230\u76ee\u5f55\u63d2\u5165\u70b9")
+            print("[ERROR] 无法找到目录插入点")
             return False
     else:
-        # index.html 不存在，从模板创建
         template_path = BASE_DIR / "index.html.template"
         if not template_path.exists():
-            print("[ERROR] index.html \u6a21\u677f\u4e0d\u5b58\u5728")
+            print("[ERROR] index.html 模板不存在")
             return False
-
-        index_content = load_template(template_path)
+        with open(template_path, "r", encoding="utf-8") as f:
+            index_content = f.read()
         index_content = index_content.replace("{{SITE_TITLE}}", SITE_TITLE)
         index_content = index_content.replace("{{SITE_SUBTITLE}}", SITE_SUBTITLE)
         index_content = index_content.replace("{{SITE_DESCRIPTION}}", SITE_DESCRIPTION)
@@ -208,101 +260,124 @@ def update_index_toc(chapter_num, title):
     with open(INDEX_FILE, "w", encoding="utf-8") as f:
         f.write(index_content)
 
-    print(f"[OK] \u66f4\u65b0\u76ee\u5f55: {INDEX_FILE}")
+    print(f"[OK] 更新目录: {INDEX_FILE}")
     return True
 
 
-def publish_chapter(chapter_num, title, md_content=None, md_file=None):
+def publish_chapter(chapter_num, title, content_md=None, md_file=None, is_last=False):
     """
-    完整发布流程：
-    1. 读取或接收 MD 内容
-    2. 生成章节 HTML
-    3. 更新上一章的"下一章"链接
-    4. 更新 index.html 目录
+    完整发布单章流程：
+    1. 激活上一章的"下一章"链接（如果上一章是末章）
+    2. 生成本章 HTML
+    3. 更新目录
     """
-    print(f"\n{'='*50}")
-    print(f"  \u53d1\u5e03\u7b2c{chapter_num}\u7ae0: {title}")
-    print(f"{'='*50}\n")
+    print(f"\n{'='*52}")
+    print(f"  发布第{chapter_num}章: {title}{'  [末章]' if is_last else ''}")
+    print(f"{'='*52}\n")
 
-    # 获取正文内容
-    if md_content:
-        content = md_content
+    # 读取正文
+    if content_md:
+        content = content_md
     elif md_file and Path(md_file).exists():
         with open(md_file, "r", encoding="utf-8") as f:
             content = f.read()
-        print(f"[INFO] \u8bfb\u53d6MD\u6587\u4ef6: {md_file}")
+        print(f"[INFO] 读取MD文件: {md_file}")
     else:
-        print("[ERROR] \u8bf7\u63d0\u4f9b md_content \u6216 md_file")
+        print("[ERROR] 请提供 --md-file 或 --content 参数")
         sys.exit(1)
 
-    # Step 1: 生成章节 HTML
-    generate_chapter_html(chapter_num, title, content)
+    # Step 1: 激活上一章的"待更新"链接
+    activate_prev_chapter_next_link(chapter_num)
 
-    # Step 2: 更新上一章的"下一章"链接
-    update_prev_chapter_next_link(chapter_num)
+    # Step 2: 生成本章 HTML
+    generate_chapter_html(chapter_num, title, content, is_last=is_last)
 
     # Step 3: 更新目录
     update_index_toc(chapter_num, title)
 
-    print(f"\n{'='*50}")
-    print(f"  \u53d1\u5e03\u5b8c\u6210\uff01\u7b2c{chapter_num}\u7ae0 [{title}] \u5df2\u53d1\u5e03")
-    print(f"{'='*50}\n")
+    # Step 4: 更新状态
+    state = load_state()
+    state["max_chapter"] = max(state.get("max_chapter", 0), chapter_num)
+    if is_last:
+        state["last_chapter"] = chapter_num
+    save_state(state)
+
+    print(f"\n{'='*52}")
+    print(f"  发布完成！第{chapter_num}章 [{title}]")
+    print(f"{'='*52}\n")
+
+
+def get_max_chapter():
+    """获取当前已发布的最大章节号。"""
+    state = load_state()
+    # 同时扫描文件做校验
+    files = sorted(CHAPTERS_DIR.glob("chapter-*.html"))
+    max_from_files = 0
+    for f in files:
+        m = re.search(r"chapter-(\d+)\.html$", f.name)
+        if m:
+            max_from_files = max(max_from_files, int(m.group(1)))
+    return max(state.get("max_chapter", 0), max_from_files)
 
 
 def list_published_chapters():
     """列出已发布的所有章节。"""
     if not CHAPTERS_DIR.exists():
-        print("\u6682\u65e0\u5df2\u53d1\u5e03\u7684\u7ae0\u8282")
+        print("暂无已发布的章节")
         return []
-
     files = sorted(CHAPTERS_DIR.glob("chapter-*.html"))
     chapters = []
     for f in files:
-        # 从文件名提取章节号: chapter-001.html -> 1
-        match = re.search(r"chapter-(\d+)\.html$", f.name)
-        if match:
-            chapters.append((int(match.group(1)), f.name))
-
-    chapters.sort(key=lambda x: x[0])
-    return chapters
+        m = re.search(r"chapter-(\d+)\.html$", f.name)
+        if m:
+            chapters.append((int(m.group(1)), f.name))
+    return sorted(chapters, key=lambda x: x[0])
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="\u7f51\u6587\u81ea\u52a8\u53d1\u5e03\u5de5\u5177",
+        description="网文自动发布工具 v2.0",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-\u793a\u4f8b:
-  python novel_publisher.py --chapter 1 --title "\u98ce\u8d77\u4e4b\u65f6"
-  python novel_publisher.py --chapter 5 --title "\u6d41\u6d41\u6d8c\u52a8" --md-file chapters/chapter-005.md
-  python novel_publisher.py --list
-        """
     )
-    parser.add_argument("--chapter", "-c", type=int, help="\u7ae0\u8282\u53f7")
-    parser.add_argument("--title", "-t", type=str, help="\u7ae0\u8282\u6807\u9898")
-    parser.add_argument("--md-file", "-f", type=str, help="MD\u5b9a\u7a3f\u6587\u4ef6\u8def\u5f84")
-    parser.add_argument("--content", type=str, help="\u76f4\u63a5\u4f20\u5165\u6b63\u6587\u5185\u5bb9\uff08\u7528\u4e8e\u7ba1\u9053\u8c03\u7528\uff09")
-    parser.add_argument("--list", "-l", action="store_true", help="\u5217\u51fa\u5df2\u53d1\u5e03\u7ae0\u8282")
+    parser.add_argument("--chapter", "-c", type=int, help="章节号")
+    parser.add_argument("--title", "-t", type=str, help="章节标题（不含第X章前缀）")
+    parser.add_argument("--md-file", "-f", type=str, help="MD定稿文件路径")
+    parser.add_argument("--content", type=str, help="直接传入正文内容（用于管道调用）")
+    parser.add_argument("--last", action="store_true",
+                        help="标记为末章（下一章显示待更新，不可点击）")
+    parser.add_argument("--list", "-l", action="store_true", help="列出已发布章节")
+    parser.add_argument("--max-chapter", action="store_true", help="输出当前最大章节号")
 
     args = parser.parse_args()
 
     if args.list:
         chapters = list_published_chapters()
         if chapters:
-            print(f"\n{'\u7ae0\u53f7':>6s}  {'\u6587\u4ef6\u540d'}")
-            print("-" * 30)
+            print(f"\n{'章号':>6}  {'文件名'}")
+            print("-" * 32)
             for num, fname in chapters:
                 print(f"  {num:>4}  {fname}")
+        else:
+            print("暂无章节")
+        return
+
+    if args.max_chapter:
+        print(get_max_chapter())
         return
 
     if not args.chapter or not args.title:
         parser.print_help()
         sys.exit(1)
 
-    # 确保目录存在
     CHAPTERS_DIR.mkdir(parents=True, exist_ok=True)
 
-    publish_chapter(args.chapter, args.title, md_content=args.content, md_file=args.md_file)
+    publish_chapter(
+        chapter_num=args.chapter,
+        title=args.title,
+        content_md=args.content,
+        md_file=args.md_file,
+        is_last=args.last,
+    )
 
 
 if __name__ == "__main__":
