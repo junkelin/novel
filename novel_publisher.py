@@ -1,26 +1,33 @@
 #!/usr/bin/env python3
 """
-novel_publisher.py - 网文自动发布工具 v2.0
+novel_publisher.py - 网文自动发布工具 v3.0
 
 功能：
 1. 将精修后的 MD 定稿转换为 HTML 成品页
 2. 自动更新 index.html 目录入口
 3. 自动更新上一章的"下一章"链接（将"待更新"变为有效链接）
 4. 每批次最后一章，"下一章"按钮显示为"下一章（待更新）"且不可点击
-5. 支持批量发布（--batch 模式，一次发布多章并自动标记末章）
+5. 支持多本书：通过 --book 参数指定书名目录
 
 用法：
     # 发布单章（自动标记为末章-待更新）
-    python novel_publisher.py --chapter 5 --title "章节标题" --md-file chapters/chapter-005.md --last
-
-    # 发布单章（非末章，下一章链接有效占位）
-    python novel_publisher.py --chapter 5 --title "章节标题" --md-file chapters/chapter-005.md
-
-    # 列出已发布章节
-    python novel_publisher.py --list
+    python novel_publisher.py --book 天命凰途 --chapter 5 --title "章节标题" --md-file chapters/chapter-005.md --last
 
     # 查询当前最大章节号
-    python novel_publisher.py --max-chapter
+    python novel_publisher.py --book 天命凰途 --max-chapter
+
+    # 列出已发布章节
+    python novel_publisher.py --book 天命凰途 --list
+
+目录结构（每本书独立目录）：
+    D:\\AI\\MyData\\网文写作\\
+        novel/               # 公共基础设施（CSS、脚本）
+            css/
+            novel_publisher.py
+        天命凰途/            # 单书目录
+            chapters/         # 章节文件（MD + HTML）
+            planning/         # 策划资料（大纲、角色档案等）
+            index.html        # 该书的首页/目录页
 """
 
 import os
@@ -31,22 +38,70 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
-# ==================== 配置区（按需修改）====================
-BASE_DIR = Path(r"D:\AI\MyData\网文写作\novel")
-CHAPTERS_DIR = BASE_DIR / "chapters"
-CSS_DIR = BASE_DIR / "css"
-INDEX_FILE = BASE_DIR / "index.html"
-STATE_FILE = BASE_DIR / ".publisher_state.json"   # 记录当前最大章节号
 
-# 站点信息
-SITE_TITLE = "天命凰途"
-SITE_SUBTITLE = "玄学 · 重生 · 大女主 | 连载中..."
-SITE_DESCRIPTION = "《天命凰途》- 都市玄学大女主重生爽文，番茄小说同步连载"
-FOOTER_TEXT = f"© {datetime.now().year} {SITE_TITLE} · AI创作"
+# ==================== 全局配置 ====================
+NOVEL_BASE = Path(r"D:\AI\MyData\网文写作\novel")   # 公共基础设施根目录
+CSS_DIR = NOVEL_BASE / "css"
+CSS_REL = "../css/style.css"  # 书目录 → CSS 的相对路径
+
+# 默认书名（可通过 --book 覆盖）
+DEFAULT_BOOK = "天命凰途"
+
+
+def get_book_paths(book_name):
+    """
+    根据书名返回该书的所有路径。
+    
+    :return: dict with BOOK_DIR, CHAPTERS_DIR, INDEX_FILE, STATE_FILE, PLANNING_DIR
+    """
+    book_dir = Path(rf"D:\AI\MyData\网文写作\novel\{book_name}")
+    return {
+        "BOOK_DIR": book_dir,
+        "CHAPTERS_DIR": book_dir / "chapters",
+        "INDEX_FILE": book_dir / "index.html",
+        "STATE_FILE": book_dir / ".publisher_state.json",
+        "PLANNING_DIR": book_dir / "planning",
+        # 站点信息
+        "SITE_TITLE": book_name,
+        "SITE_SUBTITLE": "连载中...",
+        "SITE_DESCRIPTION": f"《{book_name}》- AI创作小说",
+        "FOOTER_TEXT": f"© {datetime.now().year} {book_name} · AI创作",
+    }
+
 
 # 末章按钮文字
 NEXT_PENDING_TEXT = "下一章（待更新）"
+
+
 # ============================================================
+
+# 运行时路径（main() 中初始化）
+BOOK_NAME = DEFAULT_BOOK
+BASE_DIR = None       # BOOK_DIR 别名
+CHAPTERS_DIR = None  # CHAPTERS_DIR 别名
+INDEX_FILE = None
+STATE_FILE = None
+SITE_TITLE = ""
+SITE_SUBTITLE = ""
+SITE_DESCRIPTION = ""
+FOOTER_TEXT = ""
+
+
+def init_book(book_name):
+    """初始化全局路径变量。"""
+    global BOOK_NAME, BASE_DIR, CHAPTERS_DIR, INDEX_FILE, STATE_FILE
+    global SITE_TITLE, SITE_SUBTITLE, SITE_DESCRIPTION, FOOTER_TEXT
+    
+    BOOK_NAME = book_name
+    paths = get_book_paths(book_name)
+    BASE_DIR = paths["BOOK_DIR"]
+    CHAPTERS_DIR = paths["CHAPTERS_DIR"]
+    INDEX_FILE = paths["INDEX_FILE"]
+    STATE_FILE = paths["STATE_FILE"]
+    SITE_TITLE = paths["SITE_TITLE"]
+    SITE_SUBTITLE = paths["SITE_SUBTITLE"]
+    SITE_DESCRIPTION = paths["SITE_DESCRIPTION"]
+    FOOTER_TEXT = paths["FOOTER_TEXT"]
 
 
 def load_state():
@@ -218,7 +273,7 @@ def activate_prev_chapter_next_link(chapter_num):
 def update_index_toc(chapter_num, title):
     """
     更新 index.html 目录页，追加新章节条目。
-    如果 index.html 不存在，则从 index.html.template 创建。
+    如果 index.html 不存在，则创建新的。
     """
     chapter_date = datetime.now().strftime("%Y-%m-%d")
     num_str = str(chapter_num).zfill(3)
@@ -245,23 +300,51 @@ def update_index_toc(chapter_num, title):
             print("[ERROR] 无法找到目录插入点")
             return False
     else:
-        template_path = BASE_DIR / "index.html.template"
-        if not template_path.exists():
-            print("[ERROR] index.html 模板不存在")
-            return False
-        with open(template_path, "r", encoding="utf-8") as f:
-            index_content = f.read()
-        index_content = index_content.replace("{{SITE_TITLE}}", SITE_TITLE)
-        index_content = index_content.replace("{{SITE_SUBTITLE}}", SITE_SUBTITLE)
-        index_content = index_content.replace("{{SITE_DESCRIPTION}}", SITE_DESCRIPTION)
-        index_content = index_content.replace("{{FOOTER_TEXT}}", FOOTER_TEXT)
-        index_content = index_content.replace("{{TOC_ENTRIES}}", entry + "      {{TOC_ENTRIES}}")
+        # 创建全新的 index.html
+        index_content = build_index_template(entry)
 
     with open(INDEX_FILE, "w", encoding="utf-8") as f:
         f.write(index_content)
 
     print(f"[OK] 更新目录: {INDEX_FILE}")
     return True
+
+
+def build_index_template(first_entry=None):
+    """
+    构建全新的 index.html 内容。
+    """
+    entries = first_entry or "{{TOC_ENTRIES}}"
+    return f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{SITE_TITLE}}</title>
+  <meta name="description" content="{{SITE_DESCRIPTION}}">
+  <link rel="stylesheet" href="{CSS_REL}">
+</head>
+<body class="page-index">
+
+  <header class="site-header">
+    <h1 class="site-title">{{SITE_TITLE}}</h1>
+    <p class="site-subtitle">{{SITE_SUBTITLE}}</p>
+  </header>
+
+  <main>
+    <h2 class="toc-title">目录</h2>
+    <ul class="toc-list">
+      {entries}
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <p>{{FOOTER_TEXT}}</p>
+  </footer>
+
+</body>
+</html>'''.replace("{{SITE_TITLE}}", SITE_TITLE).replace("{{SITE_SUBTITLE}}", SITE_SUBTITLE).replace(
+    "{{SITE_DESCRIPTION}}", SITE_DESCRIPTION).replace("{{FOOTER_TEXT}}", FOOTER_TEXT)
 
 
 def publish_chapter(chapter_num, title, content_md=None, md_file=None, is_last=False):
@@ -272,7 +355,7 @@ def publish_chapter(chapter_num, title, content_md=None, md_file=None, is_last=F
     3. 更新目录
     """
     print(f"\n{'='*52}")
-    print(f"  发布第{chapter_num}章: {title}{'  [末章]' if is_last else ''}")
+    print(f"  [{BOOK_NAME}] 发布第{chapter_num}章: {title}{'  [末章]' if is_last else ''}")
     print(f"{'='*52}\n")
 
     # 读取正文
@@ -303,7 +386,7 @@ def publish_chapter(chapter_num, title, content_md=None, md_file=None, is_last=F
     save_state(state)
 
     print(f"\n{'='*52}")
-    print(f"  发布完成！第{chapter_num}章 [{title}]")
+    print(f"  [{BOOK_NAME}] 发布完成！第{chapter_num}章 [{title}]")
     print(f"{'='*52}\n")
 
 
@@ -311,7 +394,7 @@ def get_max_chapter():
     """获取当前已发布的最大章节号。"""
     state = load_state()
     # 同时扫描文件做校验
-    files = sorted(CHAPTERS_DIR.glob("chapter-*.html"))
+    files = sorted(CHAPTERS_DIR.glob("chapter-*.html")) if CHAPTERS_DIR.exists() else []
     max_from_files = 0
     for f in files:
         m = re.search(r"chapter-(\d+)\.html$", f.name)
@@ -336,9 +419,11 @@ def list_published_chapters():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="网文自动发布工具 v2.0",
+        description="网文自动发布工具 v3.0（支持多书）",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument("--book", "-b", type=str, default=DEFAULT_BOOK,
+                        help=f"书名（默认: {DEFAULT_BOOK}），对应 D:\\AI\\MyData\\网文写作\\<书名>\\ 目录")
     parser.add_argument("--chapter", "-c", type=int, help="章节号")
     parser.add_argument("--title", "-t", type=str, help="章节标题（不含第X章前缀）")
     parser.add_argument("--md-file", "-f", type=str, help="MD定稿文件路径")
@@ -350,15 +435,19 @@ def main():
 
     args = parser.parse_args()
 
+    # 初始化书籍路径
+    init_book(args.book)
+
     if args.list:
         chapters = list_published_chapters()
         if chapters:
-            print(f"\n{'章号':>6}  {'文件名'}")
+            print(f"\n[{BOOK_NAME}] 已发布章节:")
+            print(f"{'章号':>6}  {'文件名'}")
             print("-" * 32)
             for num, fname in chapters:
                 print(f"  {num:>4}  {fname}")
         else:
-            print("暂无章节")
+            print(f"[{BOOK_NAME}] 暂无章节")
         return
 
     if args.max_chapter:
