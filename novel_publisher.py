@@ -273,6 +273,7 @@ def activate_prev_chapter_next_link(chapter_num):
 def update_index_toc(chapter_num, title):
     """
     更新 index.html 目录页，追加新章节条目。
+    如果该章节已存在，则跳过（避免重复）。
     如果 index.html 不存在，则创建新的。
     """
     chapter_date = datetime.now().strftime("%Y-%m-%d")
@@ -291,6 +292,12 @@ def update_index_toc(chapter_num, title):
     if INDEX_FILE.exists():
         with open(INDEX_FILE, "r", encoding="utf-8") as f:
             index_content = f.read()
+
+        # 检查该章节是否已存在（避免重复追加）
+        chapter_link = f'chapters/chapter-{num_str}.html'
+        if chapter_link in index_content:
+            print(f"[SKIP] 第{chapter_num}章已在目录中，跳过")
+            return True
 
         if "{{TOC_ENTRIES}}" in index_content:
             index_content = index_content.replace("{{TOC_ENTRIES}}", entry + "      {{TOC_ENTRIES}}")
