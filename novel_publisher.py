@@ -223,8 +223,8 @@ def generate_chapter_html(chapter_num, title, content_md, is_last=False):
     html = html.replace("{{CHAPTER_TITLE}}", f"第{chapter_num}章 {title}")
     html = html.replace("{{CHAPTER_DATE}}", chapter_date)
     html = html.replace("{{CHAPTER_CONTENT}}", content_html)
-    html = html.replace("{{PREV_LINK}}", prev_link)
-    html = html.replace("{{NEXT_LINK}}", next_link)
+    html = html.replace("{{PREV_BTN}}", prev_link)
+    html = html.replace("{{NEXT_BTN}}", next_link)
     html = html.replace("{{SITE_TITLE}}", SITE_TITLE)
 
     with open(filepath, "w", encoding="utf-8") as f:
