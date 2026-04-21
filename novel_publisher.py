@@ -55,6 +55,11 @@ def get_book_paths(book_name):
     :return: dict with BOOK_DIR, CHAPTERS_DIR, INDEX_FILE, STATE_FILE, PLANNING_DIR
     """
     book_dir = Path(rf"D:\AI\MyData\网文写作\novel\{book_name}")
+    # 书名映射：文件夹名 -> 中文书名
+    book_name_map = {
+        "tianming-huangtu": "天命凰途",
+    }
+    site_title = book_name_map.get(book_name, book_name)
     return {
         "BOOK_DIR": book_dir,
         "CHAPTERS_DIR": book_dir / "chapters",
@@ -62,10 +67,10 @@ def get_book_paths(book_name):
         "STATE_FILE": book_dir / ".publisher_state.json",
         "PLANNING_DIR": book_dir / "planning",
         # 站点信息
-        "SITE_TITLE": book_name,
+        "SITE_TITLE": site_title,
         "SITE_SUBTITLE": "连载中...",
-        "SITE_DESCRIPTION": f"《{book_name}》- AI创作小说",
-        "FOOTER_TEXT": f"© {datetime.now().year} {book_name} · AI创作",
+        "SITE_DESCRIPTION": f"《{site_title}》- AI创作小说",
+        "FOOTER_TEXT": f"© {datetime.now().year} {site_title} · AI创作",
     }
 
 
