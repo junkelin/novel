@@ -59,6 +59,26 @@
       margin-top: 40px;
       gap: 20px;
     }
+    .nav-buttons a {
+      color: #ffd700;
+      text-decoration: none;
+      font-size: 1.1em;
+      padding: 15px 25px;
+      background: rgba(255, 215, 0, 0.1);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 10px;
+      text-align: center;
+      transition: all 0.3s ease;
+      flex: 1;
+    }
+    .nav-buttons a:hover {
+      background: rgba(255, 215, 0, 0.2);
+      transform: translateY(-3px);
+    }
+    .nav-buttons a.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
     .nav-btn {
       flex: 1;
       padding: 15px 25px;
