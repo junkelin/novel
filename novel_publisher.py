@@ -141,6 +141,10 @@ def md_to_html_paragraphs(md_text):
         if stripped.startswith("#"):
             continue
 
+        # 跳过伏笔动作附录（以【伏笔开头或包含【埋设/【回收/【加深等标记）
+        if stripped.startswith("**【") or stripped.startswith("【伏笔") or stripped.startswith("【埋设") or stripped.startswith("【回收") or stripped.startswith("【加深"):
+            continue
+
         # 场景分隔线
         if stripped in ("---", "——", "——————"):
             if current_para:
