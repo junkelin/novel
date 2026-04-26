@@ -133,25 +133,53 @@ def md_to_html_paragraphs(md_text):
     lines = md_text.strip().split("\n")
     paragraphs = []
     current_para = []
+    in_appendix = False  # 附录模式标记
+    line_idx = 0
 
     for line in lines:
         stripped = line.strip()
+        line_idx += 1
+
+        # 检测附录区域开始（质检自查、伏笔附录、精修附录等）
+        if stripped.startswith("**【") and ("质检" in stripped or "伏笔" in stripped or "精修" in stripped or "自查" in stripped or "五维" in stripped or "校验" in stripped):
+            in_appendix = True
+            continue
+
+        # 附录模式下跳过所有内容
+        if in_appendix:
+            continue
 
         # 跳过 MD 标题行
         if stripped.startswith("#"):
             continue
 
-        # 跳过伏笔动作附录（以【伏笔开头或包含【埋设/【回收/【加深等标记）
-        if stripped.startswith("**【") or stripped.startswith("【伏笔") or stripped.startswith("【埋设") or stripped.startswith("【回收") or stripped.startswith("【加深"):
+        # 跳过行内伏笔标记（【埋设】【回收】【加深】等）
+        if stripped.startswith("【伏笔") or stripped.startswith("【埋设") or stripped.startswith("【回收") or stripped.startswith("【加深"):
             continue
 
-        # 场景分隔线
+        # 场景分隔线——前瞻检查后面是否还有正文
         if stripped in ("---", "——", "——————"):
             if current_para:
                 text = process_inline("".join(current_para))
                 paragraphs.append(f"<p>{text}</p>")
                 current_para = []
-            paragraphs.append('<hr class="scene-break">')
+            # 检查后续行是否还有正文内容（非空行、非标题、非附录标记、非附录条目）
+            has_more_content = False
+            for future_line in lines[line_idx:]:
+                fs = future_line.strip()
+                if not fs:
+                    continue
+                if fs.startswith("#") or (fs.startswith("**【") and any(kw in fs for kw in ("质检","伏笔","精修","自查","五维","校验"))):
+                    continue
+                if fs.startswith("【伏笔") or fs.startswith("【埋设") or fs.startswith("【回收") or fs.startswith("【加深"):
+                    continue
+                # 跳过附录条目行（以 "- 人设/伏笔/标点/结尾/时间线/节奏 " 等开头的列表项）
+                if fs.startswith("- ") and any(fs[2:].startswith(kw) for kw in ("人设","伏笔","标点","结尾","时间线","节奏","情感","逻辑","文风","对话","视角","结构","密度")):
+                    continue
+                has_more_content = True
+                break
+            if has_more_content:
+                paragraphs.append('<hr class="scene-break">')
             continue
 
         if not stripped:
