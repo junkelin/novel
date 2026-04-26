@@ -140,8 +140,18 @@ def md_to_html_paragraphs(md_text):
         stripped = line.strip()
         line_idx += 1
 
-        # 检测附录区域开始（质检自查、伏笔附录、精修附录等）
+        # 检测附录区域开始（质检自查、伏笔附录、精修附录、章节终标记等）
         if stripped.startswith("**【") and ("质检" in stripped or "伏笔" in stripped or "精修" in stripped or "自查" in stripped or "五维" in stripped or "校验" in stripped):
+            in_appendix = True
+            continue
+
+        # 检测【第XX章·终】格式的附录标记
+        if stripped.startswith("【第") and "章·终】" in stripped:
+            in_appendix = True
+            continue
+
+        # 检测**【伏笔埋设】**/**【伏笔回收】**等标题
+        if stripped.startswith("**【伏笔"):
             in_appendix = True
             continue
 
