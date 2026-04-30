@@ -163,8 +163,14 @@ def md_to_html_paragraphs(md_text):
         if stripped.startswith("#"):
             continue
 
-        # 跳过行内伏笔标记（【埋设】【回收】【加深】【新埋】【推进】等）
-        if stripped.startswith("【伏笔") or stripped.startswith("【埋设") or stripped.startswith("【回收") or stripped.startswith("【加深") or stripped.startswith("【新埋") or stripped.startswith("【推进"):
+        # 跳过行内伏笔/附录标记（通用匹配：以【开头且包含伏笔相关关键词或冒号后跟说明文字）
+        # 不再逐一枚举前缀，避免新标记类型泄漏
+        if stripped.startswith("【") and (
+            "伏笔" in stripped or "埋设" in stripped or "回收" in stripped or
+            "加深" in stripped or "新埋" in stripped or "推进" in stripped or
+            "汇总" in stripped or "系统任务" in stripped or "重大推进" in stripped or
+            (len(stripped) > 4 and "：" in stripped and any(kw in stripped for kw in ("F0", "F_", "章", "线")))
+        ):
             continue
 
         # 场景分隔线——前瞻检查后面是否还有正文
@@ -181,7 +187,12 @@ def md_to_html_paragraphs(md_text):
                     continue
                 if fs.startswith("#") or (fs.startswith("**【") and any(kw in fs for kw in ("质检","伏笔","精修","自查","五维","校验"))):
                     continue
-                if fs.startswith("【伏笔") or fs.startswith("【埋设") or fs.startswith("【回收") or fs.startswith("【加深") or fs.startswith("【新埋") or fs.startswith("【推进"):
+                if fs.startswith("【") and (
+                    "伏笔" in fs or "埋设" in fs or "回收" in fs or
+                    "加深" in fs or "新埋" in fs or "推进" in fs or
+                    "汇总" in fs or "系统任务" in fs or "重大推进" in fs or
+                    (len(fs) > 4 and "：" in fs and any(kw in fs for kw in ("F0", "F_", "章", "线")))
+                ):
                     continue
                 # 跳过附录条目行（以 "- 人设/伏笔/标点/结尾/时间线/节奏 " 等开头的列表项）
                 if fs.startswith("- ") and any(fs[2:].startswith(kw) for kw in ("人设","伏笔","标点","结尾","时间线","节奏","情感","逻辑","文风","对话","视角","结构","密度")):
