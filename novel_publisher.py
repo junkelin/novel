@@ -11,20 +11,20 @@ novel_publisher.py - 网文自动发布工具 v3.0
 
 用法：
     # 发布单章（自动标记为末章-待更新）
-    python novel_publisher.py --book 天命凰途 --chapter 5 --title "章节标题" --md-file chapters/chapter-005.md --last
+    python novel_publisher.py --book 她的罗盘会算命 --chapter 5 --title "章节标题" --md-file chapters/chapter-005.md --last
 
     # 查询当前最大章节号
-    python novel_publisher.py --book 天命凰途 --max-chapter
+    python novel_publisher.py --book 她的罗盘会算命 --max-chapter
 
     # 列出已发布章节
-    python novel_publisher.py --book 天命凰途 --list
+    python novel_publisher.py --book 她的罗盘会算命 --list
 
 目录结构（每本书独立目录）：
     D:\\AI\\MyData\\网文写作\\
         novel/               # 公共基础设施（CSS、脚本）
             css/
             novel_publisher.py
-        天命凰途/            # 单书目录
+        她的罗盘会算命/            # 单书目录
             chapters/         # 章节文件（MD + HTML）
             planning/         # 策划资料（大纲、角色档案等）
             index.html        # 该书的首页/目录页
@@ -57,7 +57,7 @@ def get_book_paths(book_name):
     book_dir = Path(rf"D:\AI\MyData\网文写作\novel\{book_name}")
     # 书名映射：文件夹名 -> 中文书名
     book_name_map = {
-        "tianming-huangtu": "天命凰途",
+        "tianming-huangtu": "她的罗盘会算命",
     }
     site_title = book_name_map.get(book_name, book_name)
     return {
